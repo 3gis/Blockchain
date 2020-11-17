@@ -1,13 +1,18 @@
 
 #include <vector>
-
+#include <string>
 #include <bitset>
 #include <sstream>
+#include <iostream>
+#include <algorithm>
+#include <ctime>
 
+using std::cout;
 using std::vector;
 using std::string;
 
 using std::string;
+using std::to_string;
 using std::bitset;
 using std::endl;
 using std::ifstream;
@@ -36,7 +41,11 @@ struct Block{
     vector<Transaction> Transactions;
 };
 
-string hash_function(string toHash);
+string hash_function(string fraze);
+Block SearchForNextBlock(const Block& lastBlock, const vector<Transaction>& t);
+string getBlockMerkelRootHash(const vector<Transaction>& t);
+vector<string> getVectorMerkelRootHash(const vector<string>& t);
+bool transactionConfirmation(Transaction takenTransaction, const vector<User>& AllUsers);
 
 string popas(string hex);
 string xoras(string a,string b);
@@ -44,45 +53,136 @@ string andas(string a, string b);
 string notas(string a);
 string oras(string a, string b);
 
+
 int main(){
     vector<Block>Blockchain;
-    ///Block genesisBlock(-1,timestamp,version,merkelRootHash,0,4,0);
+    Block genesisBlock;
+    genesisBlock.prevBlockHash="None";
+    genesisBlock.timeStamp = time(0);
+    genesisBlock.version = "v0.1";
+    genesisBlock.nonce = 0;
+    genesisBlock.difficultyTarget = 3;
+    Blockchain.push_back(genesisBlock);
+
     vector <User> users;
-    for(int i = 0; i<100;i++){
+    for(int i = 0; i<1000;i++){
         User client;
-        client.name = "";
-        ///client.public_key = hash_function(name+timestamp);
-        ///client.balance = rand() % 200 + 1;
+        client.name = "user"+to_string(i);
+        client.public_key = hash_function(hash_function(client.name+to_string(client.name.length())+to_string(rand()%100)) );
+        client.balance = rand() % 200 + 1;
+        users.push_back(client);
     }
 // 1000 useriu
+
     vector<Transaction> transactionPool;
+    int a = 0;
     for(int i = 0; i< 10000; i++){
         Transaction trans;
-        int x = (int)rand()%100+1;
-        int y = (int)rand()%100+1;
+        int x = (int)rand()%1000;
+        int y = (int)rand()%1000;
         while (y!=x)
-            y = rand()%100+1;
-        ///trans.senderKey = users[rand%100+1].public_key;
-        ///trans.recipientKey = users[rand%100+1].public_key;
-        ///trans.sum = rand()%500;
-        ///trans.transactionID = hash_function(trans.senderKey + trans.recipientKey + trans.sum;
-        ///transactionPool.push_back(trans);
+            y = rand()%1000;
+        trans.senderKey = users[x].public_key;
+        trans.recipientKey = users[y].public_key;
+        trans.sum = rand()%500;
+        trans.transactionID = hash_function(trans.senderKey + trans.recipientKey + to_string(trans.sum) );
+        transactionPool.push_back(trans);
     }
 // 10000 transakciju
+
     while(transactionPool.size()!=0){
         vector<Transaction>takenTransactions;
-        for(int i = 0; i<100;i++)
-        ///takenTransactions.push_back(transactionPool.pop_back());
-        ///Block newBlock=SearchForNextBlock();
-        ///newblock.Transactions = takenTransactions;
         for(int i = 0; i<100;i++){
-        ///transactionConfirmation(newblock.Transactions[i]);
+        takenTransactions.push_back(transactionPool.back());
+        transactionPool.pop_back();
         }
+        for(int i = 0; i<100;i++){
+        takenTransactions[i].completed=transactionConfirmation(takenTransactions[i], users);
+        }
+        Block newBlock=SearchForNextBlock(Blockchain.back(), takenTransactions);
+        Blockchain.push_back(newBlock);
+
     }
     return 0;
 }
-string hash_function(string toHash){
-    string fraze;
+
+bool transactionConfirmation(Transaction takenTransaction, const vector<User>& AllUsers){
+    bool confirmSender = false;
+    bool confirmRecipient = false;
+    for(int i = 0; i<AllUsers.size();i++){
+        if(takenTransaction.senderKey == AllUsers[i].public_key){
+            if(AllUsers[i].balance >= takenTransaction.sum){
+                 confirmSender = true;
+            }
+        }
+        if(takenTransaction.recipientKey == AllUsers[i].public_key){
+                confirmRecipient = true;
+        }
+    }
+    bool answer;
+    if(confirmSender == true && confirmRecipient == true)
+        answer = true;
+    else answer = false;
+
+    return answer;
+}
+string getBlockMerkelRootHash(const vector<Transaction>& t){
+    vector<string>hashes;
+    string finalHash;
+    for(int i = 0; i<t.size();i+=2){
+        auto first = (t.begin()+(i/2))->transactionID;
+        auto second = (prev(t.end())-(i/2))->transactionID;
+        hashes.push_back(hash_function(first + second));
+    }
+    while(hashes.size()!=1){
+        hashes=getVectorMerkelRootHash(hashes);
+    }
+    finalHash = hashes[0];
+    return finalHash;
+}
+
+vector<string> getVectorMerkelRootHash(const vector<string>& t){
+    vector<string> hashes;
+    for(int i = 0; i<t.size();i+=2){
+        auto first = *(t.begin()+(i/2));
+        auto second = *(prev(t.end())-(i/2));
+        hashes.push_back(hash_function(first + second));
+    }
+    return hashes;
+}
+
+Block SearchForNextBlock(const Block& lastBlock, const vector<Transaction>& t){
+    Block block;
+    uint32_t nextNonce = 0;
+    int diff = lastBlock.difficultyTarget;
+    block.difficultyTarget = diff;
+    block.Transactions = t;
+    block.merkelRootHash = getBlockMerkelRootHash(t);
+    block.timeStamp = time(0);
+    block.nonce = -1;
+    block.version = "v0.1";
+    string prevBlockHash = hash_function(hash_function(lastBlock.prevBlockHash + lastBlock.merkelRootHash + to_string(lastBlock.nonce) + to_string(lastBlock.timeStamp) + lastBlock.version + to_string(lastBlock.difficultyTarget)));
+    while(block.nonce == -1){
+        string blockHash = hash_function(hash_function(prevBlockHash + block.merkelRootHash + to_string(nextNonce) + to_string(block.timeStamp) + block.version + to_string(block.difficultyTarget)));
+        for(int i = 0; i<diff;i++){
+            if(blockHash[i]!='a')
+                break;
+            else if (i == diff-1 && blockHash[i]=='a'){
+                block.prevBlockHash = prevBlockHash;
+                block.nonce=nextNonce;
+                cout << "New block created: " << blockHash << "\n";
+                break;
+            }
+        }
+        nextNonce++;
+    }
+
+    return block;
+}
+
+
+
+string hash_function(string fraze){
     string ID[5]={"01000100111110010111000000110001","11010000010010000000000000000001","01000100111110010111011110110001","11011111110010000000011000111101","11010100111110010111000100110001"};
     string hex;
     for(int i = 0; i<fraze.size();i++){
@@ -96,12 +196,12 @@ string hash_function(string toHash){
         hex += bitset<8>(fraze.size()*8).to_string();
         int dydis = hex.size()/32;
         string hexiukai[dydis];
-        string zodziai[80];
+        string zodziai[40];
         for(int i = 0;i<dydis;i++){
             hexiukai[i]=popas(hex);
             hex.erase(hex.begin(),hex.begin()+32);
         }
-        for(int i = 0, j = 2, p = 8, k = 13, h = 0; h < 80;h++,i++,j++,p++,k++){
+        for(int i = 0, j = 2, p = 8, k = 13, h = 0; h < 40;h++,i++,j++,p++,k++){
             if(i > dydis-1) i=0;
             if(j > dydis-1) j=0;
             if(p > dydis-1) p=0;
@@ -111,16 +211,20 @@ string hash_function(string toHash){
             zodziai[h].erase(zodziai[h].begin(),zodziai[h].begin()+1);
         }
         for(int i = 0; i<5;i++){
-            for(int j = 0; j<80;j++){
+            for(int j = 0; j<40;j++){
                 if(i%2==0){
                     ID[i]=andas(ID[i],notas(zodziai[j]));
                     ID[i]+=ID[i][0];
+                    ID[i]+=ID[i][1];
+                    ID[i].erase(ID[i].begin(),ID[i].begin()+2);
+                }
+                else{
+                    ID[i]=oras(notas(ID[i]),zodziai[j]);
+                    ID[i]+=ID[i][0];
                     ID[i].erase(ID[i].begin(),ID[i].begin()+1);
                 }
-                else
-                    ID[i]=oras(notas(ID[i]),zodziai[j]);
-                }
             }
+        }
         stringstream ff;
         for(int i = 0; i<5;i++){
             if(ID[i][0]=='0')
