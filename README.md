@@ -14,11 +14,13 @@ This is my iteration of simulation of a blockchain.
 
 ## User, Transaction and Block Structs:  
 # User  
-`struct User{
+````
+struct User{
     string name;
     string public_key;
     double balance;
-};`  
+};
+````
 # Transaction  
 `struct Transaction{
     string transactionID;
