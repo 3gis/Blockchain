@@ -6,7 +6,11 @@
 #include <iostream>
 #include <algorithm>
 #include <ctime>
+#include <random>
+#include <chrono>
 
+#include <fstream>
+using std::ofstream;
 using std::cout;
 using std::vector;
 using std::string;
@@ -30,6 +34,8 @@ struct Transaction{
     string recipientKey;
     double sum;
     bool completed;
+
+
 };
 struct Block{
     string prevBlockHash;
@@ -42,10 +48,11 @@ struct Block{
 };
 
 string hash_function(string fraze);
-Block SearchForNextBlock(const Block& lastBlock, const vector<Transaction>& t);
+Block SearchForNextBlock(const Block& lastBlock, const vector<vector<Transaction>>& t, int& chosenTransaction);
 string getBlockMerkelRootHash(const vector<Transaction>& t);
 vector<string> getVectorMerkelRootHash(const vector<string>& t);
 bool transactionConfirmation(Transaction takenTransaction, vector<User>& AllUsers);
+void completeTransaction(Transaction transactionPool,vector<User>& users);
 
 string popfunction(string hex);
 string xorfunction(string a,string b);
@@ -53,57 +60,96 @@ string andfunction(string a, string b);
 string notfunction(string a);
 string orfunction(string a, string b);
 
-
 int main(){
+    std::random_device rd;
+    std::mt19937::result_type seed = rd() ^ ((std::mt19937::result_type)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count() +(std::mt19937::result_type)std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count() );
+    std::mt19937 gen(seed);
     vector<Block>Blockchain;
     Block genesisBlock;
     genesisBlock.prevBlockHash="None";
     genesisBlock.timeStamp = time(0);
-    genesisBlock.version = "v0.1";
+    genesisBlock.version = "v0.2";
     genesisBlock.nonce = 0;
     genesisBlock.difficultyTarget = 3;
     Blockchain.push_back(genesisBlock);
-
+    cout << "Genesis block created..\n";
     vector <User> users;
+    std::uniform_int_distribution<unsigned> distrib(0, 1000);
+    std::uniform_int_distribution<unsigned> distrib1(1, 200);
     for(int i = 0; i<1000;i++){
         User client;
         client.name = "user"+to_string(i);
-        client.public_key = hash_function(hash_function(client.name+to_string(client.name.length())+to_string(rand()%100)) );
-        client.balance = rand() % 200 + 1;
+        client.public_key = hash_function(hash_function(client.name+to_string(client.name.length())+to_string(distrib(gen))) );
+        client.balance = distrib1(gen);
         users.push_back(client);
     }
-// 1000 useriu
-
+    cout << "1000 random users created..\n";
+// 1000 users
+    std::uniform_int_distribution<unsigned> distrib2(0, 500);
     vector<Transaction> transactionPool;
     int a = 0;
     for(int i = 0; i< 10000; i++){
         Transaction trans;
-        int x = (int)rand()%1000;
-        int y = (int)rand()%1000;
+        int x = distrib(gen);
+        int y = distrib(gen);
         while (y!=x)
-            y = rand()%1000;
+            y = distrib(gen);
         trans.senderKey = users[x].public_key;
         trans.recipientKey = users[y].public_key;
-        trans.sum = rand()%500;
+        trans.sum = distrib2(gen);
         trans.transactionID = hash_function(trans.senderKey + trans.recipientKey + to_string(trans.sum) );
         transactionPool.push_back(trans);
     }
-// 10000 transakciju
+    cout << "10000 random transactions created..\n";
+// 10000 transactions
 
     while(transactionPool.size()!=0){
-        vector<Transaction>takenTransactions;
-        for(int i = 0; i<100;i++){
-        takenTransactions.push_back(transactionPool.back());
-        transactionPool.pop_back();
+        vector<vector<Transaction>>takenTransactions;
+        int TransactionID;
+        vector<vector<Transaction>> fakeTransactionPool;
+        for(int j = 0; j<5;j++){
+            fakeTransactionPool.push_back(transactionPool);
+            vector<Transaction>emptyTransaction;
+            takenTransactions.push_back(emptyTransaction);
+            for(int i = 0; i<100;i++){
+                std::uniform_int_distribution<unsigned> distrib3(0, fakeTransactionPool[j].size());
+                int randomID = distrib3(gen);
+                takenTransactions[j].push_back(fakeTransactionPool[j][randomID]);
+                fakeTransactionPool[j].erase(fakeTransactionPool[j].begin()+randomID);
+            }
         }
-        for(int i = 0; i<100;i++){
-        takenTransactions[i].completed=transactionConfirmation(takenTransactions[i], users);
+        cout << "5 different transaction pools created..\n";
+        for(int j = 0; j<5;j++){
+            for(int i = 0; i<100;i++){
+                takenTransactions[j][i].completed=transactionConfirmation(takenTransactions[j][i], users);
+            }
         }
-        Block newBlock=SearchForNextBlock(Blockchain.back(), takenTransactions);
+        cout << "All taken transactions validated..\n";
+        cout << "Starting to search for the new block.. \n..\n";
+        Block newBlock=SearchForNextBlock(Blockchain.back(), takenTransactions, TransactionID);
         Blockchain.push_back(newBlock);
-
+        transactionPool=fakeTransactionPool[TransactionID];
+        cout << "Block completed.\n";
+        cout << "Completing transactions..\n";
+        for(int i = 0; i<100;i++)
+            if(transactionPool[i].completed)
+                completeTransaction(transactionPool[i], users);
+        cout << "Completed.\n";
     }
     return 0;
+}
+void completeTransaction(Transaction transactionPool,vector<User>& users){
+    int id1=-1,id2=-1;
+    for(int i = 0; i<users.size() || (id1!=-1 && id2!=-1);i++){
+        if(i.public_key == transactionPool.recipientKey){
+            id1 = i;
+        }
+        if(i.public_key == transactionPool.senderKey){
+            id2 = i;
+        }
+    }
+    users[id1].balance+=transactionPool.sum;
+    users[id2].balance-=transactionPool.sum;
 }
 
 bool transactionConfirmation(Transaction takenTransaction, vector<User>& AllUsers){
@@ -111,23 +157,21 @@ bool transactionConfirmation(Transaction takenTransaction, vector<User>& AllUser
     int recipientKey;
     bool confirmSender = false;
     bool confirmRecipient = false;
-    for(int i = 0; i<AllUsers.size();i++){
-        if(takenTransaction.senderKey == AllUsers[i].public_key){
-            if(AllUsers[i].balance >= takenTransaction.sum && takenTransaction.sum > 0){
-                 confirmSender = true;
-                 senderKey = i;
+    if(takenTransaction.transactionID == hash_function(takenTransaction.senderKey + takenTransaction.recipientKey + to_string(takenTransaction.sum) )){
+        for(int i = 0; i<AllUsers.size();i++){
+            if(takenTransaction.senderKey == AllUsers[i].public_key){
+                if(AllUsers[i].balance >= takenTransaction.sum && takenTransaction.sum > 0){
+                     confirmSender = true;
+                }
             }
-        }
-        if(takenTransaction.recipientKey == AllUsers[i].public_key){
-                confirmRecipient = true;
-                recipientKey=i;
+            if(takenTransaction.recipientKey == AllUsers[i].public_key){
+                    confirmRecipient = true;
+            }
         }
     }
     bool answer;
     if(confirmSender == true && confirmRecipient == true){
         answer = true;
-        AllUsers[senderKey].balance -= takenTransaction.sum;
-        AllUsers[recipientKey].balance += takenTransaction.sum;
     }
     else answer = false;
 
@@ -158,38 +202,75 @@ vector<string> getVectorMerkelRootHash(const vector<string>& t){
     return hashes;
 }
 
-Block SearchForNextBlock(const Block& lastBlock, const vector<Transaction>& t){
+Block SearchForNextBlock(const Block& lastBlock, const vector<vector<Transaction>>& t, int& chosenTransaction){
+    ofstream ff;
+    ff.open("log.txt", std::fstream::app);
     Block block;
+    chosenTransaction=0;
+    vector<Transaction> bestTransactionT;
+    string bestMerkelRootHash;
     uint32_t nextNonce = 0;
     int diff = lastBlock.difficultyTarget;
     block.difficultyTarget = diff;
-    block.Transactions = t;
-    block.merkelRootHash = getBlockMerkelRootHash(t);
+    ///block.Transactions = t;
+    ///block.merkelRootHash = getBlockMerkelRootHash(t);
     block.timeStamp = time(0);
     block.nonce = -1;
-    block.version = "v0.1";
-    string prevBlockHash = hash_function(hash_function(lastBlock.prevBlockHash + lastBlock.merkelRootHash + to_string(lastBlock.nonce) + to_string(lastBlock.timeStamp) + lastBlock.version + to_string(lastBlock.difficultyTarget)));
-    while(block.nonce == -1){
-        string blockHash = hash_function(hash_function(prevBlockHash + block.merkelRootHash + to_string(nextNonce) + to_string(block.timeStamp) + block.version + to_string(block.difficultyTarget)));
-        for(int i = 0; i<diff;i++){
-            if(blockHash[i]!='a')
-                break;
-            else if (i == diff-1 && blockHash[i]=='a'){
-                block.prevBlockHash = prevBlockHash;
-                block.nonce=nextNonce;
-                cout << "New block created: " << blockHash << "\n";
-                break;
+    block.version = "v0.2";
+    int bestNonce;
+    int bestTransaction;
+    string prevBlockHash = hash_function(hash_function(to_string(lastBlock.nonce)) + lastBlock.prevBlockHash + lastBlock.merkelRootHash + to_string(lastBlock.nonce) + to_string(lastBlock.timeStamp) + lastBlock.version + to_string(lastBlock.difficultyTarget));
+    int limit = 200;
+    int countt = 0;
+    while(countt == 0){
+        countt=0;
+        for(int i = 0; i<5;i++){
+            bool rado = false;
+            nextNonce = 0;
+            block.nonce = -1;
+            block.merkelRootHash = getBlockMerkelRootHash(t[i]);
+            //for(int nextNonce=0;block.nonce ==-1 && nextNonce < bestNonce;nextNonce++){
+                while(block.nonce == -1 && nextNonce < bestNonce && nextNonce < limit){
+                    string blockHash = /*hash_function(*/hash_function(hash_function(to_string(nextNonce))+prevBlockHash + block.merkelRootHash + to_string(nextNonce) + to_string(block.timeStamp) + block.version + to_string(block.difficultyTarget))/*)*/;
+                    for(int i = 0; i<diff;i++){
+                        if(blockHash[i]!='a')
+                            break;
+                        else if (i == diff-1 && blockHash[i]=='a'){
+                            block.prevBlockHash = prevBlockHash;
+                            block.nonce=nextNonce;
+                            ff << blockHash << "\n";
+                            cout << blockHash << ":" << nextNonce << "\n";
+                            rado = true;
+                            break;
+                        }
+                    }
+                    nextNonce++;
+                }
+            if((nextNonce-1 < bestNonce || i == 0) && rado == true){
+                bestTransactionT = t[i];
+                bestMerkelRootHash = block.merkelRootHash;
+                bestNonce = nextNonce-1;
+                bestTransaction =i;
+                countt++;
+                cout << "NEW best block found" << "\n";
+                rado = true;
             }
         }
-        nextNonce++;
+        if(countt==0){
+            limit+=1300;
+            cout << "Limit: " << limit <<"\n";
+        }
     }
-
+    block.Transactions = bestTransactionT;
+    block.merkelRootHash = bestMerkelRootHash;
+    chosenTransaction = bestTransaction;
+    cout << "Final best block: " << bestTransaction << " with nonce: " << bestNonce << "\n";
     return block;
 }
 
 
-
-string hash_function(string fraze){
+string hash_function(string fraze)
+{
     string ID[5]={"01000100111110010111000000110001","11010000010010000000000000000001","01000100111110010111011110110001","11011111110010000000011000111101","11010100111110010111000100110001"};
     string hex;
     for(int i = 0; i<fraze.size();i++){
