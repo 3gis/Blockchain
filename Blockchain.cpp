@@ -52,7 +52,7 @@ Block SearchForNextBlock(const Block& lastBlock, const vector<vector<Transaction
 string getBlockMerkelRootHash(const vector<Transaction>& t);
 vector<string> getVectorMerkelRootHash(const vector<string>& t);
 bool transactionConfirmation(Transaction takenTransaction, vector<User>& AllUsers);
-void completeTransaction(Transaction transactionPool,vector<User>& users);
+void completeTransaction(const Transaction& transactionPool,vector<User>& users);
 
 string popfunction(string hex);
 string xorfunction(string a,string b);
@@ -70,7 +70,7 @@ int main(){
     genesisBlock.timeStamp = time(0);
     genesisBlock.version = "v0.2";
     genesisBlock.nonce = 0;
-    genesisBlock.difficultyTarget = 3;
+    genesisBlock.difficultyTarget = 2;
     Blockchain.push_back(genesisBlock);
     cout << "Genesis block created..\n";
     vector <User> users;
@@ -138,13 +138,13 @@ int main(){
     }
     return 0;
 }
-void completeTransaction(Transaction transactionPool,vector<User>& users){
+void completeTransaction(const Transaction& transactionPool,vector<User>& users){
     int id1=-1,id2=-1;
-    for(int i = 0; i<users.size() || (id1!=-1 && id2!=-1);i++){
-        if(i.public_key == transactionPool.recipientKey){
+    for(int i = 0; i<users.size() || (id1==-1 || id2==-1);i++){
+        if(users[i].public_key == transactionPool.recipientKey){
             id1 = i;
         }
-        if(i.public_key == transactionPool.senderKey){
+        if(users[i].public_key == transactionPool.senderKey){
             id2 = i;
         }
     }
