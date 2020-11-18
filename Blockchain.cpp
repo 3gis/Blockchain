@@ -47,11 +47,11 @@ string getBlockMerkelRootHash(const vector<Transaction>& t);
 vector<string> getVectorMerkelRootHash(const vector<string>& t);
 bool transactionConfirmation(Transaction takenTransaction, vector<User>& AllUsers);
 
-string popas(string hex);
-string xoras(string a,string b);
-string andas(string a, string b);
-string notas(string a);
-string oras(string a, string b);
+string popfunction(string hex);
+string xorfunction(string a,string b);
+string andfunction(string a, string b);
+string notfunction(string a);
+string orfunction(string a, string b);
 
 
 int main(){
@@ -205,7 +205,7 @@ string hash_function(string fraze){
         string hexiukai[dydis];
         string zodziai[40];
         for(int i = 0;i<dydis;i++){
-            hexiukai[i]=popas(hex);
+            hexiukai[i]=popfunction(hex);
             hex.erase(hex.begin(),hex.begin()+32);
         }
         for(int i = 0, j = 2, p = 8, k = 13, h = 0; h < 40;h++,i++,j++,p++,k++){
@@ -213,20 +213,20 @@ string hash_function(string fraze){
             if(j > dydis-1) j=0;
             if(p > dydis-1) p=0;
             if(k > dydis-1) k=0;
-            zodziai[h]=xoras(xoras(xoras(hexiukai[k],hexiukai[p]),hexiukai[j]),hexiukai[i]);
+            zodziai[h]=xorfunction(xorfunction(xorfunction(hexiukai[k],hexiukai[p]),hexiukai[j]),hexiukai[i]);
             zodziai[h]+=zodziai[h][0];
             zodziai[h].erase(zodziai[h].begin(),zodziai[h].begin()+1);
         }
         for(int i = 0; i<5;i++){
             for(int j = 0; j<40;j++){
                 if(i%2==0){
-                    ID[i]=andas(ID[i],notas(zodziai[j]));
+                    ID[i]=andfunction(ID[i],notfunction(zodziai[j]));
                     ID[i]+=ID[i][0];
                     ID[i]+=ID[i][1];
                     ID[i].erase(ID[i].begin(),ID[i].begin()+2);
                 }
                 else{
-                    ID[i]=oras(notas(ID[i]),zodziai[j]);
+                    ID[i]=orfunction(notfunction(ID[i]),zodziai[j]);
                     ID[i]+=ID[i][0];
                     ID[i].erase(ID[i].begin(),ID[i].begin()+1);
                 }
@@ -242,30 +242,30 @@ string hash_function(string fraze){
         ff >> fraze;
     return fraze;
 }
-string popas(string hex){
+string popfunction(string hex){
     hex.erase(hex.begin()+32,hex.end());
     return hex;
 }
 
-string xoras(string a,string b){
+string xorfunction(string a,string b){
     string ats;
     for(int i = 0; i < 32;i++){
-        if(a[i]=='1' && b[i]=='0' || b[i]=='1' && a[i]=='0')
+        if( (a[i]=='1' && b[i]=='0') ||  (b[i]=='1' && a[i]=='0') )
             ats+="1";
         else ats+="0";
     }
     return ats;
 }
-string andas(string a, string b){
+string andfunction(string a, string b){
     string ats;
     for(int i = 0; i < 32; i++){
-        if(a[i]=='1' && b[i]=='1' || a[i]=='0' && b[i]=='0' )
+        if((a[i]=='1' && b[i]=='1') || (a[i]=='0' && b[i]=='0') )
             ats+="1";
         else ats+="0";
     }
     return ats;
 }
-string notas(string a){
+string notfunction(string a){
     string ats;
     for(int i = 0; i < 32; i++){
         if(a[i]=='1')
@@ -274,7 +274,7 @@ string notas(string a){
     }
     return ats;
 }
-string oras(string a, string b){
+string orfunction(string a, string b){
     string ats;
     for(int i = 0; i < 32; i++){
         if(a[i]=='1' || b[i]=='1')
