@@ -1,4 +1,4 @@
-# Blockchain V0.1  
+# Blockchain V0.2  
 
 This is my iteration of simulation of a blockchain.  
 
@@ -44,6 +44,10 @@ struct Block{
 };
 ```
 # Changelog  
+## V0.2  
+- Upgraded block mining function.  
+- Made better transaction verification.  
+
 ## V0.1  
 - Integrated my own hash function to the blockchain.  
 - Created SearchForTheNextBlock function.  
