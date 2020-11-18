@@ -1,8 +1,8 @@
-## Blockchain V0.1  
+# Blockchain V0.1  
 
 This is my iteration of simulation of a blockchain.  
 
-# What does the program do?  
+## What does the program do?  
 - Creates 1000 random users with random balances (0-500)  
 - Creates 10000 transactions between the random users (users are picked randomly), the transaction might be correct and incorrect.
 - Picks 100 transaction out of the 10000 transaction pool.  
@@ -12,8 +12,8 @@ This is my iteration of simulation of a blockchain.
 - Whether the transactions are correct or incorrect, they are marked accordingly and the user balances are changed.  
 - Steps 3-7 are repeated till there are no more transactions.
 
-## User, Transaction and Block Structs:  
-# User  
+# User, Transaction and Block Structs:  
+## User  
 ```
 struct User{
     string name;
@@ -21,7 +21,7 @@ struct User{
     double balance;
 };
 ```
-# Transaction  
+## Transaction  
 ```
 struct Transaction{
     string transactionID;
@@ -31,7 +31,7 @@ struct Transaction{
     bool completed;
 };
 ```
-# Block  
+## Block  
 ```
 struct Block{
     string prevBlockHash;
