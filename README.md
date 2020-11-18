@@ -2,7 +2,7 @@
 
 This is my iteration of simulation of a blockchain.  
 
-# The program:  
+# What does the program do?  
 - Creates 1000 random users with random balances (0-500)  
 - Creates 10000 transactions between the random users (users are picked randomly), the transaction might be correct and incorrect.
 - Picks 100 transaction out of the 10000 transaction pool.  
