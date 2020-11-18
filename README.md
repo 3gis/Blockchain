@@ -47,6 +47,7 @@ struct Block{
 ## V0.2  
 - Upgraded block mining function.  
 - Made better transaction verification.  
+- Using <random> library instead of rand() function.
 
 ## V0.1  
 - Integrated my own hash function to the blockchain.  
