@@ -22,15 +22,18 @@ struct User{
 };
 ```
 # Transaction  
-`struct Transaction{
+```
+struct Transaction{
     string transactionID;
     string senderKey;
     string recipientKey;
     double sum;
     bool completed;
-};`
+};
+```
 # Block  
-`struct Block{
+```
+struct Block{
     string prevBlockHash;
     time_t timeStamp;
     string version;
@@ -38,4 +41,5 @@ struct User{
     uint32_t nonce;
     uint32_t difficultyTarget;
     vector<Transaction> Transactions;
-};`
+};
+```
