@@ -45,7 +45,7 @@ string hash_function(string fraze);
 Block SearchForNextBlock(const Block& lastBlock, const vector<Transaction>& t);
 string getBlockMerkelRootHash(const vector<Transaction>& t);
 vector<string> getVectorMerkelRootHash(const vector<string>& t);
-bool transactionConfirmation(Transaction takenTransaction, const vector<User>& AllUsers);
+bool transactionConfirmation(Transaction takenTransaction, vector<User>& AllUsers);
 
 string popas(string hex);
 string xoras(string a,string b);
@@ -106,22 +106,29 @@ int main(){
     return 0;
 }
 
-bool transactionConfirmation(Transaction takenTransaction, const vector<User>& AllUsers){
+bool transactionConfirmation(Transaction takenTransaction, vector<User>& AllUsers){
+    int senderKey;
+    int recipientKey;
     bool confirmSender = false;
     bool confirmRecipient = false;
     for(int i = 0; i<AllUsers.size();i++){
         if(takenTransaction.senderKey == AllUsers[i].public_key){
-            if(AllUsers[i].balance >= takenTransaction.sum){
+            if(AllUsers[i].balance >= takenTransaction.sum && takenTransaction.sum > 0){
                  confirmSender = true;
+                 senderKey = i;
             }
         }
         if(takenTransaction.recipientKey == AllUsers[i].public_key){
                 confirmRecipient = true;
+                recipientKey=i;
         }
     }
     bool answer;
-    if(confirmSender == true && confirmRecipient == true)
+    if(confirmSender == true && confirmRecipient == true){
         answer = true;
+        AllUsers[senderKey].balance -= takenTransaction.sum;
+        AllUsers[recipientKey].balance += takenTransaction.sum;
+    }
     else answer = false;
 
     return answer;
