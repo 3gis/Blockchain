@@ -1,4 +1,8 @@
+
 # Blockchain V0.2  
+# Prerequisites
+- Libbitcoin library  
+- C++ compiler  
 
 This is my iteration of simulation of a blockchain.  
 
@@ -44,6 +48,9 @@ struct Block{
 };
 ```
 # Changelog  
+## V0.3
+- Upgraded merkel root hash function. It uses Libbitcoin library.
+
 ## V0.2  
 - Upgraded block mining function.  
 - Made better transaction verification.  
