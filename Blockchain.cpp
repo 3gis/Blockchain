@@ -9,6 +9,8 @@
 #include <random>
 #include <chrono>
 
+#include <bitcoin/bitcoin.hpp>
+
 #include <fstream>
 using std::ofstream;
 using std::cout;
@@ -46,7 +48,7 @@ struct Block{
     uint32_t difficultyTarget;
     vector<Transaction> Transactions;
 };
-
+bc::hash_digest create_merkle(bc::hash_list& merkle);
 string hash_function(string fraze);
 Block SearchForNextBlock(const Block& lastBlock, const vector<vector<Transaction>>& t, int& chosenTransaction);
 string getBlockMerkelRootHash(const vector<Transaction>& t);
@@ -70,7 +72,7 @@ int main(){
     genesisBlock.timeStamp = time(0);
     genesisBlock.version = "v0.2";
     genesisBlock.nonce = 0;
-    genesisBlock.difficultyTarget = 2;
+    genesisBlock.difficultyTarget = 3;
     Blockchain.push_back(genesisBlock);
     cout << "Genesis block created..\n";
     vector <User> users;
@@ -136,6 +138,7 @@ int main(){
                 completeTransaction(transactionPool[i], users);
         cout << "Completed.\n";
     }
+
     return 0;
 }
 void completeTransaction(const Transaction& transactionPool,vector<User>& users){
@@ -178,30 +181,55 @@ bool transactionConfirmation(Transaction takenTransaction, vector<User>& AllUser
     return answer;
 }
 string getBlockMerkelRootHash(const vector<Transaction>& t){
-    vector<string>hashes;
-    string finalHash;
-    for(int i = 0; i<t.size();i+=2){
-        auto first = (t.begin()+(i/2))->transactionID;
-        auto second = (prev(t.end())-(i/2))->transactionID;
-        hashes.push_back(hash_function(first + second));
+    bc::hash_list tx_hashes;
+    string zeros = "0000000000000000000000000";
+    for(auto i : t){
+        char x[65];
+        strcpy(x, (i.transactionID+zeros).c_str());
+        tx_hashes.push_back(bc::hash_literal(x));
     }
-    while(hashes.size()!=1){
-        hashes=getVectorMerkelRootHash(hashes);
-    }
-    finalHash = hashes[0];
-    return finalHash;
+    const bc::hash_digest merkle_root = create_merkle(tx_hashes);
+    string merkleHash = bc::encode_base16(merkle_root);
+    return merkleHash;
 }
 
-vector<string> getVectorMerkelRootHash(const vector<string>& t){
-    vector<string> hashes;
-    for(int i = 0; i<t.size();i+=2){
-        auto first = *(t.begin()+(i/2));
-        auto second = *(prev(t.end())-(i/2));
-        hashes.push_back(hash_function(first + second));
-    }
-    return hashes;
+bc::hash_digest create_merkle(bc::hash_list& merkle)
+{
+ // Stop if hash list is empty or contains one element
+ if (merkle.empty())
+ return bc::null_hash;
+ else if (merkle.size() == 1)
+ return merkle[0];
+ // While there is more than 1 hash in the list, keep looping...
+ while (merkle.size() > 1)
+ {
+ // If number of hashes is odd, duplicate last hash in the list.
+ if (merkle.size() % 2 != 0)
+ merkle.push_back(merkle.back());
+ // List size is now even.
+ assert(merkle.size() % 2 == 0);
+ // New hash list.
+ bc::hash_list new_merkle;
+ // Loop through hashes 2 at a time.
+ for (auto it = merkle.begin(); it != merkle.end(); it += 2)
+ {
+ // Join both current hashes together (concatenate).
+ bc::data_chunk concat_data(bc::hash_size * 2);
+ auto concat = bc::serializer<
+ decltype(concat_data.begin())>(concat_data.begin());
+ concat.write_hash(*it);
+ concat.write_hash(*(it + 1));
+ // Hash both of the hashes.
+ bc::hash_digest new_root = bc::bitcoin_hash(concat_data);
+ // Add this to the new list.
+ new_merkle.push_back(new_root);
+ }
+ // This is the new list.
+ merkle = new_merkle;
+ }
+ // Finally we end up with a single item.
+ return merkle[0];
 }
-
 Block SearchForNextBlock(const Block& lastBlock, const vector<vector<Transaction>>& t, int& chosenTransaction){
     ofstream ff;
     ff.open("log.txt", std::fstream::app);
@@ -217,7 +245,7 @@ Block SearchForNextBlock(const Block& lastBlock, const vector<vector<Transaction
     block.timeStamp = time(0);
     block.nonce = -1;
     block.version = "v0.2";
-    int bestNonce;
+    int bestNonce=999999;
     int bestTransaction;
     string prevBlockHash = hash_function(hash_function(to_string(lastBlock.nonce)) + lastBlock.prevBlockHash + lastBlock.merkelRootHash + to_string(lastBlock.nonce) + to_string(lastBlock.timeStamp) + lastBlock.version + to_string(lastBlock.difficultyTarget));
     int limit = 200;
