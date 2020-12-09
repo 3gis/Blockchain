@@ -1,10 +1,11 @@
 
 # Blockchain V0.2  
+This is my iteration of simulation of a blockchain.  
 # Prerequisites
 - Libbitcoin library  
 - C++ compiler  
 
-This is my iteration of simulation of a blockchain.  
+
 
 ## What does the program do?  
 - Creates 1000 random users with random balances (1-200)  
